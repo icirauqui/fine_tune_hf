@@ -162,3 +162,5 @@ cython_debug/
 
 # Fine tuned model
 fine_tuned_model/
+llama_models_hf/
+experiments/
