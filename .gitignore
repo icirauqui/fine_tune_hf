@@ -166,5 +166,3 @@ llama_models_hf/
 experiments/
 
 # Config paths
-config.json
-config.json
