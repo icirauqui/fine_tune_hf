@@ -100,7 +100,7 @@ def train(gpu = False, path_in = "", path_out = ""):
 
     #  - - - - - - - - DATASET - - - - - - - - - - - -
 
-    data = load_dataset("json", data_files="alpaca-bitcoin-sentiment-dataset.json")
+    data = load_dataset("json", data_files="data/alpaca-bitcoin-sentiment-dataset.json")
     print(data["train"])
 
     def generate_prompt(data_point):
