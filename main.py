@@ -1,243 +1,88 @@
-import transformers
-import textwrap
-from transformers import LlamaTokenizer, LlamaForCausalLM
-import os
 import sys
-from typing import List
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QTextEdit
+from PyQt5.QtCore import QTextStream, Qt
+from PyQt5.QtGui import QTextCursor
+from PyQt5.uic import loadUi
+import io
 
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
- 
-from peft import (
-    LoraConfig,
-    get_peft_model,
-    get_peft_model_state_dict,
-    prepare_model_for_int8_training,
-)
- 
-import fire
-import torch
-from datasets import load_dataset
-import pandas as pd
- 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import seaborn as sns
-from pylab import rcParams
-
-#torch.set_default_tensor_type(torch.FloatTensor)
-#print("CUDA enabled", torch.cuda.is_available())
+from finetuner import train
 
 
-sns.set(rc={'figure.figsize':(10, 7)})
-sns.set(rc={'figure.dpi':100})
-sns.set(style='white', palette='muted', font_scale=1.2)
- 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-#DEVICE = "cpu"
-print("DEVICE:", DEVICE)
+class TextRedirector(io.TextIOBase):
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+
+    def write(self, s):
+        self.text_widget.moveCursor(QTextCursor.End)
+        self.text_widget.insertPlainText(s)
+
+    def flush(self):
+        pass
 
 
+class MyWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        loadUi("main_window.ui", self)  # Load the .ui file
 
-#  - - - - - - - - WEIGHTS - - - - - - - - - - - -
+        self.setWindowTitle("HF Fine-Tune")
+        self.pushButton_input.clicked.connect(self.select_input)
+        self.pushButton_output.clicked.connect(self.select_output)
+        self.pushButton_data.clicked.connect(self.select_data)
+        self.pushButton_train.clicked.connect(self.train)
+        self.pushButton_evaluate.clicked.connect(self.evaluate)
+        self.pushButton_inference.clicked.connect(self.inference)
 
-BASE_MODEL = "decapoda-research/llama-7b-hf"
-BASE_MODEL = "/home/icirauqui/wErkspace/llm/llama_models/hf/7B"
+        # Set output to textEdit_log
+        sys.stdout = TextRedirector(self.textEdit_log)
 
-from transformers import AutoModel
-
-device_map = {'module_name': 'cpu'}  # Change 'module_name' to the actual module name
-#model = AutoModel.from_pretrained('model_name', load_in_8bit_fp32_cpu_offload=True, device_map=device_map)
-
-
-# Device map 0
-#device_map = {
-    #'q_proj.weight': 'cpu',
-    #'v_proj.weight': 'cpu',
-#}
-
-# Device map per layer
-#device_map = {
-    #'model.layers.0.self_attn.q_proj.weight': 'cpu',
-    #'model.layers.0.self_attn.v_proj.weight': 'cpu',
-    #'model.layers.0.self_attn.k_proj.weight': 'cpu',
-    #'model.layers.0.self_attn.o_proj.weight': 'cpu',
-    #'model.layers.0.mlp.gate_proj.weight': 'cpu',
-    #'model.layers.0.mlp.down_proj.weight': 'cpu',
-    #'model.layers.0.mlp.up_proj.weight': 'cpu',
-    #'model.layers.0.input_layernorm.weight': 'cpu',
-    #'model.layers.0.post_attention_layernorm.weight': 'cpu',
-    #'model.layers.0.self_attn.rotary_emb.inv_freq': 'cpu',
-#}
-
-device_map = {
-    #'model.layers': 'cpu',
-    #'model.embed_tokens.weight': 'cpu',
-    'model': 'cpu',
-    'lm_head': 'cpu',
-}
-
-#model.layers[0].self_attn.q_proj.weight.data = model.layers[0].self_attn.q_proj.weight.data.to('cpu')
-#model.layers[0].self_attn.v_proj.weight.data = model.layers[0].self_attn.v_proj.weight.data.to('cpu')
-
-
-#device_map = {
-#    "transformer.word_embeddings": 0,
-#    "transformer.word_embeddings_layernorm": 0,
-#    "lm_head": "cpu",
-#    "transformer.h": 0,
-#    "transformer.ln_f": 0,
-#}
-
- 
-model = LlamaForCausalLM.from_pretrained(
-    BASE_MODEL,
-    load_in_8bit=True,
-    #load_in_8bit_fp32_cpu_offload=True,
-    llm_int8_enable_fp32_cpu_offload=True,
-    torch_dtype=torch.float16,
-    #device_map="auto",
-    #device_map = ["auto", "balanced", "balanced_low_0", "sequential"]
-    device_map=device_map,
-)
-
-print(model.get_memory_footprint())
- 
-tokenizer = LlamaTokenizer.from_pretrained(BASE_MODEL)
- 
-tokenizer.pad_token_id = (
-    0  # unk. we want this to be different from the eos token
-)
-tokenizer.padding_side = "left"
+        # Set app icon to generic gear
+        self.setWindowFlags(self.windowFlags() | Qt.Window)
+        self.setWindowIcon(self.style().standardIcon(1))
 
 
 
+    def select_input(self):
+        input_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
+        if input_path:
+            self.lineEdit_input.setText(input_path)
 
-#  - - - - - - - - DATASET - - - - - - - - - - - -
+    def select_output(self):
+        output_path = QFileDialog.getExistingDirectory(self, "Select Output Folder")
+        if output_path:
+            self.lineEdit_output.setText(output_path)
 
-data = load_dataset("json", data_files="alpaca-bitcoin-sentiment-dataset.json")
-print(data["train"])
+    def select_data(self):
+        data_path = QFileDialog.getExistingDirectory(self, "Select Data Folder")
+        if data_path:
+            self.lineEdit_data.setText(data_path)
 
-def generate_prompt(data_point):
-    return f"""Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.  # noqa: E501
-### Instruction:
-{data_point["instruction"]}
-### Input:
-{data_point["input"]}
-### Response:
-{data_point["output"]}"""
- 
-CUTOFF_LEN = 512
-#CUTOFF_LEN = [512, 1024, 2048]
- 
-def tokenize(prompt, add_eos_token=True):
-    result = tokenizer(
-        prompt,
-        truncation=True,
-        max_length=CUTOFF_LEN,
-        padding=False,
-        return_tensors=None,
-    )
-    if (
-        result["input_ids"][-1] != tokenizer.eos_token_id
-        and len(result["input_ids"]) < CUTOFF_LEN
-        and add_eos_token
-    ):
-        result["input_ids"].append(tokenizer.eos_token_id)
-        result["attention_mask"].append(1)
- 
-    result["labels"] = result["input_ids"].copy()
- 
-    return result
- 
-def generate_and_tokenize_prompt(data_point):
-    full_prompt = generate_prompt(data_point)
-    tokenized_full_prompt = tokenize(full_prompt)
-    return tokenized_full_prompt
+    def train(self):
+        if not self.lineEdit_input.text() or not self.lineEdit_output.text() or not self.lineEdit_data.text():
+            self.statusbar.showMessage("Input and/or output paths are empty")
+            return
+        
+        print("Training on", "GPU" if self.checkBox_gpu.isChecked() else "CPU")
+        train(self.checkBox_gpu.isChecked(), self.lineEdit_input.text(), self.lineEdit_output.text(), self.lineEdit_data.text())
 
-train_val = data["train"].train_test_split(
-    test_size=200, shuffle=True, seed=42
-)
-train_data = (
-    train_val["train"].map(generate_and_tokenize_prompt)
-)
-val_data = (
-    train_val["test"].map(generate_and_tokenize_prompt)
-)
+    def evaluate(self):
+        if not self.lineEdit_input.text() or not self.lineEdit_output.text() or not self.lineEdit_data.text():
+            self.statusbar.showMessage("Input and/or output paths are empty")
+            return
+        print("Evaluating on", "GPU" if self.checkBox_gpu.isChecked() else "CPU")
+        print("Not implemented yet")
+
+    def inference(self):
+        if not self.lineEdit_input.text() or not self.lineEdit_data.text():
+            self.statusbar.showMessage("Input and/or output paths are empty")
+            return
+        print("Inference on", "GPU" if self.checkBox_gpu.isChecked() else "CPU")
+        print("Not implemented yet")
 
 
 
-
-#  - - - - - - - - TRAINING - - - - - - - - - - - -
-
-LORA_R = 8
-LORA_ALPHA = 16
-LORA_DROPOUT= 0.05
-LORA_TARGET_MODULES = [
-    "q_proj",
-    "v_proj",
-]
- 
-BATCH_SIZE = 4 #128
-MICRO_BATCH_SIZE = 1 #4
-GRADIENT_ACCUMULATION_STEPS = BATCH_SIZE // MICRO_BATCH_SIZE
-LEARNING_RATE = 3e-4
-TRAIN_STEPS = 20 #300
-OUTPUT_DIR = "experiments"
-
-model = prepare_model_for_int8_training(model)
-config = LoraConfig(
-    r=LORA_R,
-    lora_alpha=LORA_ALPHA,
-    target_modules=LORA_TARGET_MODULES,
-    lora_dropout=LORA_DROPOUT,
-    bias="none",
-    task_type="CAUSAL_LM",
-)
-model = get_peft_model(model, config)
-model.print_trainable_parameters()
-
-training_arguments = transformers.TrainingArguments(
-    per_device_train_batch_size=MICRO_BATCH_SIZE,
-    gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
-    warmup_steps=100,
-    max_steps=TRAIN_STEPS,
-    learning_rate=LEARNING_RATE,
-    #fp16=True,
-    logging_steps=10,
-    optim="adamw_torch",
-    evaluation_strategy="steps",
-    save_strategy="steps",
-    eval_steps=50,
-    save_steps=50,
-    output_dir=OUTPUT_DIR,
-    save_total_limit=3,
-    load_best_model_at_end=True,
-    report_to="tensorboard"
-)
-
-data_collator = transformers.DataCollatorForSeq2Seq(
-    tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-)
-
-trainer = transformers.Trainer(
-    model=model,
-    train_dataset=train_data,
-    eval_dataset=val_data,
-    args=training_arguments,
-    data_collator=data_collator
-)
-model.config.use_cache = False
-old_state_dict = model.state_dict
-model.state_dict = (
-    lambda self, *_, **__: get_peft_model_state_dict(
-        self, old_state_dict()
-    )
-).__get__(model, type(model))
- 
-model = torch.compile(model)
-
-print("START TRAINING")
-
-trainer.train()
-model.save_pretrained(OUTPUT_DIR)
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = MyWindow()
+    window.show()
+    sys.exit(app.exec_())
