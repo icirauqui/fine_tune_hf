@@ -1,5 +1,5 @@
 {
-    "input_path": "",
-    "output_path": "",
-    "data_path": ""
+    "input_path": "/home/icirauqui/wErkspace/llm/fine_tune_hf",
+    "output_path": "/home/icirauqui/wErkspace/llm/llama_models/hf/fine_tuned/7B",
+    "data_path": "/home/icirauqui/wErkspace/llm/fine_tune_hf/data/alpaca-bitcoin-sentiment-dataset.json"
 }
