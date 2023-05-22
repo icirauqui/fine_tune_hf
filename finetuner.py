@@ -139,7 +139,7 @@ def train(gpu = False, path_in = "", path_out = "", data_file = ""):
     #  - - - - - - - - TRAINING - - - - - - - - - - - -
 
     LORA_R = 8
-    LORA_ALPHA = 16
+    LORA_ALPHA = 32
     LORA_DROPOUT= 0.05
     LORA_TARGET_MODULES = [
         "q_proj",
