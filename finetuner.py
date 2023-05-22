@@ -65,9 +65,9 @@ def train(gpu = False, path_in = "", path_out = "", data_file = ""):
 
     model = LlamaForCausalLM.from_pretrained(
         BASE_MODEL,
-        #load_in_8bit=True,
-        #llm_int8_enable_fp32_cpu_offload=True,
-        #torch_dtype=torch.float16,
+        load_in_8bit=True,
+        llm_int8_enable_fp32_cpu_offload=True,
+        torch_dtype=torch.float16,
         device_map=device_map,
     )
 
@@ -139,7 +139,7 @@ def train(gpu = False, path_in = "", path_out = "", data_file = ""):
     #  - - - - - - - - TRAINING - - - - - - - - - - - -
 
     LORA_R = 8
-    LORA_ALPHA = 32
+    LORA_ALPHA = 16
     LORA_DROPOUT= 0.05
     LORA_TARGET_MODULES = [
         "q_proj",
