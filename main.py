@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QTextEdit
-from PyQt5.QtCore import QTextStream, Qt
+from PyQt5.QtCore import QTextStream, Qt, QTimer, QThread
 from PyQt5.QtGui import QTextCursor
 from PyQt5.uic import loadUi
 import io
@@ -20,6 +20,19 @@ class TextRedirector(io.TextIOBase):
         pass
 
 
+class UpdateThread(QThread):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+
+    def run(self):
+        timer = QTimer()
+        timer.timeout.connect(self.window.repaint)
+        timer.start(1000)
+        self.exec_()
+
+
+
 class MyWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -35,10 +48,7 @@ class MyWindow(QMainWindow):
 
         # Set output to textEdit_log
         sys.stdout = TextRedirector(self.textEdit_log)
-
-        # Set app icon to generic gear
-        self.setWindowFlags(self.windowFlags() | Qt.Window)
-        self.setWindowIcon(self.style().standardIcon(1))
+        #sys.stderr = TextRedirector(self.textEdit_log)
 
         # Debug - Set texts
         self.lineEdit_input.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/7B")
@@ -73,7 +83,6 @@ class MyWindow(QMainWindow):
         if not self.lineEdit_input.text() or not self.lineEdit_output.text() or not self.lineEdit_data.text():
             self.statusbar.showMessage("Input and/or output paths are empty")
             return
-        
         print("Training on", "GPU" if self.checkBox_gpu.isChecked() else "CPU")
         train(self.checkBox_gpu.isChecked(), self.lineEdit_input.text(), self.lineEdit_output.text(), self.lineEdit_data.text())
 
@@ -90,6 +99,7 @@ class MyWindow(QMainWindow):
             return
         print("Inference on", "GPU" if self.checkBox_gpu.isChecked() else "CPU")
         print("Not implemented yet")
+
 
 
 

@@ -66,11 +66,8 @@ def train(gpu = False, path_in = "", path_out = "", data_file = ""):
     model = LlamaForCausalLM.from_pretrained(
         BASE_MODEL,
         load_in_8bit=True,
-        #load_in_8bit_fp32_cpu_offload=True,
         llm_int8_enable_fp32_cpu_offload=True,
         torch_dtype=torch.float16,
-        #device_map="auto",
-        #device_map = ["auto", "balanced", "balanced_low_0", "sequential"]
         device_map=device_map,
     )
 
