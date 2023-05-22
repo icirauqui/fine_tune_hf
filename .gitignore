@@ -164,3 +164,6 @@ cython_debug/
 fine_tuned_model/
 llama_models_hf/
 experiments/
+
+# Config paths
+config.json
