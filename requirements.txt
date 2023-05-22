@@ -1,0 +1,12 @@
+PyQt5
+textwrap3
+transformers
+typing
+peft
+fire
+datasets
+pandas
+matplotlib
+seaborn
+pylab-sdk
+torch

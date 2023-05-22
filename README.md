@@ -1,5 +1,25 @@
 # Fine Tune HF LLMs
 
+Fine tune Large Language Models in HuggingFace format.
+If you have models in different formats, you'll need to transform them to the HuggingFace's. 
+You may do so with the script provided by HuggingFace:
+
+```bash
+git clone https://github.com/huggingface/transformers.git
+cd transformers
+python3 src/transformers/models/llama/convert_llama_weights_to_hf.py \
+    --input_dir /path/to/downloaded/llama/weights --model_size 7B --output_dir /output/path
+```
+
+## Requirements
+
+Provided in requirements.txt:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+
 ## Run
 
 ```bash
