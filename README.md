@@ -1,4 +1,4 @@
-# Fine Tune HF LLMs
+# Fine Tune HuggingFace LLMs in CPU or GPU
 
 Fine tune Large Language Models in HuggingFace format.
 If you have models in different formats, you'll need to transform them to the HuggingFace's. 
@@ -35,6 +35,13 @@ python3 main.py
  - Button "Train": begin training, after completion the ressulting model is saved in the Output Path.
  - Button "Evaluate": evaluate the model on the test set.
  - Button "Inference": use the model to generate text without further training.
+
+
+## Data
+
+Test data is provided in the data folder.
+Original data is available in the csv file, a script (data_proc.py) transforms it into the required json format used by the finetuner.
+
 
 
 ## Notes
