@@ -1,6 +1,6 @@
 import transformers
 import textwrap
-from transformers import LlamaTokenizer, LlamaForCausalLM
+from transformers import LlamaTokenizer, LlamaForCausalLM, AutoModel
 import os
 import sys
 from typing import List
@@ -22,7 +22,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import seaborn as sns
-from pylab import rcParams
+#from pylab import rcParams
 
 
 sns.set(rc={'figure.figsize':(10, 7)})
@@ -32,14 +32,14 @@ sns.set(style='white', palette='muted', font_scale=1.2)
 
 
 
-def train(gpu = False, path_in = "", path_out = ""):
+def train(gpu = False, path_in = "", path_out = "", data_file = ""):
 
     if not gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
     
     import torch
 
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    DEVICE = "cuda" if (torch.cuda.is_available() and gpu) else "cpu"
     print("Torch device:", DEVICE)
 
     #  - - - - - - - - WEIGHTS - - - - - - - - - - - -
@@ -47,36 +47,22 @@ def train(gpu = False, path_in = "", path_out = ""):
     BASE_MODEL = "decapoda-research/llama-7b-hf"
     BASE_MODEL = "/home/icirauqui/wErkspace/llm/llama_models/hf/13B"
     OUTPUT_DIR = "experiments"
+    DATA_PATH = "data/alpaca-bitcoin-sentiment-dataset.json"
+
 
     if path_in != "":
         BASE_MODEL = path_in
     if path_out != "":
         OUTPUT_DIR = path_out
+    if data_file != "":
+        DATA_PATH = data_file
 
-    from transformers import AutoModel
-
-    #device_map = {'module_name': 'cpu'}  # Change 'module_name' to the actual module name
-
-    # Device map per layer
-    #device_map = {
-        #'model.layers.0.self_attn.q_proj.weight': 'cpu',
-        #'model.layers.0.self_attn.v_proj.weight': 'cpu',
-        #'model.layers.0.self_attn.k_proj.weight': 'cpu',
-        #'model.layers.0.self_attn.o_proj.weight': 'cpu',
-        #'model.layers.0.mlp.gate_proj.weight': 'cpu',
-        #'model.layers.0.mlp.down_proj.weight': 'cpu',
-        #'model.layers.0.mlp.up_proj.weight': 'cpu',
-        #'model.layers.0.input_layernorm.weight': 'cpu',
-        #'model.layers.0.post_attention_layernorm.weight': 'cpu',
-        #'model.layers.0.self_attn.rotary_emb.inv_freq': 'cpu',
-    #}
-
+    
     device_map = {
         'model': DEVICE,
         'lm_head': DEVICE,
     }
 
-    
     model = LlamaForCausalLM.from_pretrained(
         BASE_MODEL,
         load_in_8bit=True,
@@ -100,7 +86,7 @@ def train(gpu = False, path_in = "", path_out = ""):
 
     #  - - - - - - - - DATASET - - - - - - - - - - - -
 
-    data = load_dataset("json", data_files="data/alpaca-bitcoin-sentiment-dataset.json")
+    data = load_dataset("json", data_files=DATA_PATH)
     print(data["train"])
 
     def generate_prompt(data_point):

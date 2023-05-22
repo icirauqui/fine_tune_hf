@@ -40,6 +40,12 @@ class MyWindow(QMainWindow):
         self.setWindowFlags(self.windowFlags() | Qt.Window)
         self.setWindowIcon(self.style().standardIcon(1))
 
+        # Debug - Set texts
+        self.lineEdit_input.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/7B")
+        self.lineEdit_output.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/fine_tuned/7B")
+        self.lineEdit_data.setText("/home/icirauqui/wErkspace/llm/fine_tune_hf/data/alpaca-bitcoin-sentiment-dataset.json")
+
+
 
 
     def select_input(self):
@@ -53,9 +59,15 @@ class MyWindow(QMainWindow):
             self.lineEdit_output.setText(output_path)
 
     def select_data(self):
-        data_path = QFileDialog.getExistingDirectory(self, "Select Data Folder")
+        # Select data file, json format
+        data_path = QFileDialog.getOpenFileName(self, "Select Data File", filter="JSON (*.json)")
         if data_path:
-            self.lineEdit_data.setText(data_path)
+            self.lineEdit_data.setText(data_path[0])
+
+
+        #data_path = QFileDialog.getExistingDirectory(self, "Select Data Folder")
+        #if data_path:
+        #    self.lineEdit_data.setText(data_path)
 
     def train(self):
         if not self.lineEdit_input.text() or not self.lineEdit_output.text() or not self.lineEdit_data.text():
