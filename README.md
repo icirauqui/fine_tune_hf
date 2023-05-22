@@ -1,15 +1,6 @@
 # Fine Tune HuggingFace LLMs in CPU or GPU
 
 Fine tune Large Language Models in HuggingFace format.
-If you have models in different formats, you'll need to transform them to the HuggingFace's. 
-You may do so with the script provided by HuggingFace:
-
-```bash
-git clone https://github.com/huggingface/transformers.git
-cd transformers
-python3 src/transformers/models/llama/convert_llama_weights_to_hf.py \
-    --input_dir /path/to/downloaded/llama/weights --model_size 7B --output_dir /output/path
-```
 
 ## Requirements
 
@@ -42,6 +33,16 @@ python3 main.py
 Test data is provided in the data folder.
 Original data is available in the csv file, a script (data_proc.py) transforms it into the required json format used by the finetuner.
 
+
+If you have models in different formats, you'll need to transform them to the HuggingFace's. 
+You may do so with the script provided by HuggingFace:
+
+```bash
+git clone https://github.com/huggingface/transformers.git
+cd transformers
+python3 src/transformers/models/llama/convert_llama_weights_to_hf.py \
+    --input_dir /path/to/downloaded/llama/weights --model_size 7B --output_dir /output/path
+```
 
 
 ## Notes
