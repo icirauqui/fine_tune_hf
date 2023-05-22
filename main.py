@@ -4,6 +4,7 @@ from PyQt5.QtCore import QTextStream, Qt, QTimer, QThread
 from PyQt5.QtGui import QTextCursor
 from PyQt5.uic import loadUi
 import io
+import json
 
 from finetuner import train
 
@@ -50,10 +51,17 @@ class MyWindow(QMainWindow):
         sys.stdout = TextRedirector(self.textEdit_log)
         #sys.stderr = TextRedirector(self.textEdit_log)
 
+        # Read json file
+        with open("config.json") as f:
+            self.config = json.load(f)
+            self.lineEdit_input.setText(self.config["input_path"])
+            self.lineEdit_output.setText(self.config["output_path"])
+            self.lineEdit_data.setText(self.config["data_path"])
+
         # Debug - Set texts
-        self.lineEdit_input.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/7B")
-        self.lineEdit_output.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/fine_tuned/7B")
-        self.lineEdit_data.setText("/home/icirauqui/wErkspace/llm/fine_tune_hf/data/alpaca-bitcoin-sentiment-dataset.json")
+        #self.lineEdit_input.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/7B")
+        #self.lineEdit_output.setText("/home/icirauqui/wErkspace/llm/llama_models/hf/fine_tuned/7B")
+        #self.lineEdit_data.setText("/home/icirauqui/wErkspace/llm/fine_tune_hf/data/alpaca-bitcoin-sentiment-dataset.json")
 
 
 
@@ -62,17 +70,30 @@ class MyWindow(QMainWindow):
         input_path = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if input_path:
             self.lineEdit_input.setText(input_path)
+        if input_path != self.config["input_path"]:
+            self.config["input_path"] = input_path
+            with open("config.json", "w") as f:
+                json.dump(self.config, f)
 
     def select_output(self):
         output_path = QFileDialog.getExistingDirectory(self, "Select Output Folder")
         if output_path:
             self.lineEdit_output.setText(output_path)
+        if output_path != self.config["output_path"]:
+            self.config["output_path"] = output_path
+            with open("config.json", "w") as f:
+                json.dump(self.config, f)
+
 
     def select_data(self):
         # Select data file, json format
         data_path = QFileDialog.getOpenFileName(self, "Select Data File", filter="JSON (*.json)")
         if data_path:
             self.lineEdit_data.setText(data_path[0])
+        if data_path[0] != self.config["data_path"]:
+            self.config["data_path"] = data_path[0]
+            with open("config.json", "w") as f:
+                json.dump(self.config, f)
 
 
         #data_path = QFileDialog.getExistingDirectory(self, "Select Data Folder")

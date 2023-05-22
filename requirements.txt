@@ -12,3 +12,5 @@ pylab-sdk
 torch
 accelerate
 bitsandbytes
+sentencepiece
+tensorboardX
